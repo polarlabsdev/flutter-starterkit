@@ -1,0 +1,8 @@
+services:
+  flutter-web:
+    image: flutter-starterkit-container:latest
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
