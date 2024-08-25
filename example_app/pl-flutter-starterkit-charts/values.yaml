@@ -1,0 +1,17 @@
+namespace: ${APP_NAME}-${NAMESPACE_SUFFIX}
+appName: ${APP_NAME}
+replicas: ${POD_REPLICAS}
+imageLocation: ${IMAGE_NAME}
+registrySecretName: ${REGISTRY_SECRET_NAME}
+containerPorts:
+  - name: http
+    port: 8000
+    targetPort: 8000
+clusterIssuerName: ${CLUSTER_ISSUER}
+tlsSecretName: tls-${APP_NAME}-${ENV_NAME}
+hosts:
+  - domainName: ${FULL_DOMAIN}
+    ingressPaths:
+      - path: /
+        type: Prefix
+        servicePort: 8000
