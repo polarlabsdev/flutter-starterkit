@@ -21,7 +21,6 @@ pipelines:
       - step:
           name: Mirror to GitHub
           image: alpine/git:latest  # Small alpine-based image with git and ssh pre-installed
-          deployment: github
           script:
             # bitbucket options will fetch just the current branch, so it is required to fetch all:
             - git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
