@@ -1,22 +1,93 @@
-# README #
+# Flutter Starterkit
 
-This README would normally document whatever steps are necessary to get your application up and running.
+A basis for starting new Flutter projects without having to lay all the groundwork. Simply fork, configure as needed, and start building!
 
-### What is this repository for? ###
+## Current Status
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+- Web platform support only (iOS and Android support planned for future releases)
+- Early development phase
+- Production and preview environments available through Bitbucket Pipelines
 
-### How do I get set up? ###
+## Development Setup
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+### Prerequisites
 
+- Flutter SDK (v3.24.4)
+- Git
+- A code editor (VS Code recommended with Flutter extension)
+
+### Getting Started
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd pinones
+   ```
+
+2. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
+
+3. Run the project locally:
+   ```bash
+   flutter run -d chrome
+   ```
+
+## Building for Production
+
+Currently, the project only supports web builds. To create a production build locally:
+
+```bash
+flutter build web
+```
+
+## Deployment
+
+### Infrastructure
+
+- Deployments are managed through Bitbucket Pipelines
+- Uses Helm for Kubernetes deployments
+- NGINX serves the web application
+- Deployment configurations are located in `pinones-charts/`
+- Note: Due to [this issue](https://github.com/flutter/flutter/issues/158088), builds for deployment are performed within the pipeline rather than in Dockerfile.
+
+### Pipeline Structure
+
+The project uses three main pipeline configurations:
+
+1. **Pull Request (PR) Pipeline**
+   - Triggers on PR creation
+   - Runs tests
+   - Includes manual trigger for preview environment deployment
+
+2. **Production Pipeline**
+   - Triggers on PR merge
+   - Runs tests
+   - Deploys to production (manual confirmation required)
+
+3. **Cleanup Pipeline**
+   - Manual trigger only
+   - Removes preview environments given a matching PR number
+
+### Deployment Process
+
+1. Web build is created within the pipeline
+2. Build artifacts are saved
+3. Artifacts are injected into an NGINX-based Dockerfile
+4. NGINX configuration is injected from local `nginx.conf`
+5. Deployment proceeds using Polar Labs standard Helm chart
+
+### Using Our flutter-runner Docker Container
+
+In order to save time in builds and have full control over the flutter SDK being used, we maintain a docker container called `flutter-runner` which can be found here: https://bitbucket.org/polarlabsca/flutter-runner/src/main/
+
+Before building this project in CI/CD it is necessary to deploy one of these images with the matching SDK version using the pipelines pre-installed in that repo. You can then edit the `image` prop in `bitbucket-pipelines.yml`.
+
+## Configuration Files
+
+- `nginx.conf`: Contains NGINX server configuration
+- `pinones-charts/`: Contains Helm deployment charts and configurations
 
 ### nginx config breakdown
 
@@ -43,9 +114,6 @@ This directive defines a fallback mechanism for handling requests.
 
 $uri is a variable that represents the requested URL path. The first part (try_files $uri) tells Nginx to try to serve the exact file requested by the URL. The second part ($uri/) attempts to append a trailing slash to the requested URL and try again. This can be useful for handling requests for directories that might have an index.html file. The =404 at the end specifies that if none of the previous attempts locate a valid file, Nginx should return a 404 Not Found error.
 
+## Known Issues
 
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
+- Web builds must be performed in pipeline due to [Flutter issue #158088](https://github.com/flutter/flutter/issues/158088)

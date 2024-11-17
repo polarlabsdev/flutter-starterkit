@@ -1,4 +1,4 @@
-namespace: ${APP_NAME}-${NAMESPACE_SUFFIX}
+namespace: ${APP_NAME}-${ENV_NAME}
 appName: ${APP_NAME}
 replicas: ${POD_REPLICAS}
 imageLocation: ${IMAGE_NAME}
