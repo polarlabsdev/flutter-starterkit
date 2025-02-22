@@ -9,6 +9,17 @@ containerPorts:
     targetPort: 8000
 clusterIssuerName: ${CLUSTER_ISSUER}
 tlsSecretName: tls-${APP_NAME}-${ENV_NAME}
+
+# only set these env vars if we need to guarantee a certain amount of resources
+# e.g. for a production environment, not a preview environment
+resources:
+  limits:
+    cpu: "${POD_CPU_LIMIT}"
+    memory: "${POD_MEMORY_LIMIT}"
+  requests:
+    cpu: "${POD_CPU_REQUEST}"
+    memory: "${POD_MEMORY_REQUEST}"
+    
 hosts:
   - domainName: ${FULL_DOMAIN}
     ingressPaths:

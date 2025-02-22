@@ -1,0 +1,12 @@
+# using the traditional name .env causes errors in the web platform 
+# because it ignores hidden files when generating assets
+ENV_NAME=${ENV_NAME}
+BASE_API_URL=${BASE_API_URL}
+WEBSITE_URL=${WEBSITE_URL}
+LOG_HTTP_REQUESTS=${LOG_HTTP_REQUESTS}
+LOG_UMAMI_EVENTS=${LOG_UMAMI_EVENTS}
+SENTRY_DSN=${SENTRY_DSN}
+SENTRY_RELEASE_NAME=${SENTRY_RELEASE_NAME}
+UMAMI_ENABLED=${UMAMI_ENABLED}
+UMAMI_URL=${UMAMI_URL}
+UMAMI_WEB_ID=${UMAMI_WEB_ID}

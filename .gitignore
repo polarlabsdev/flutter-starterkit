@@ -61,4 +61,7 @@ app.*.map.json
 
 # Ignore .env files
 .env
+dotenv
 android/local.properties
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh

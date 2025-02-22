@@ -1,9 +1,6 @@
 # Our custom image that contains the flutter toolkit for web.
 # Make sure to add run-as-user: flutter to steps that use the flutter cli
-image:
-  name: registry.digitalocean.com/polar-labs-registry/flutter-runner:3.24.4
-  username: $DIGITALOCEAN_ACCESS_TOKEN
-  password: $DIGITALOCEAN_ACCESS_TOKEN
+image: alpine/doctl:1.27.13 # comes with doctl, kubectl, and helm
 
 # enable Docker for your repository
 options:
@@ -16,6 +13,10 @@ definitions:
     # https://github.com/flutter/flutter/issues/158088
     - step: &build-flutter-web
         name: "Build Flutter Web in Pipeline [Temporary]"
+        image:
+          name: registry.digitalocean.com/polar-labs-registry/flutter-runner:3.29.0
+          username: $DIGITALOCEAN_ACCESS_TOKEN
+          password: $DIGITALOCEAN_ACCESS_TOKEN
         run-as-user: flutter
         script:
           - source set_env.sh #loads and executes environment variables and functions from a shell script named set_env.sh into the current shell session.
@@ -24,13 +25,14 @@ definitions:
           # of the docker container to try and get around weird bug where build hangs    
           - flutter clean
           - flutter pub get
+          - envsubst < ./dotenv.template > ./dotenv
+          - cat ./dotenv
           - flutter build web --no-pub --release --verbose
         artifacts:
           - build/**
 
     - step: &put-container-into-registry
         name: Put docker image into DO registry
-        image: alpine/doctl:1.27.13 # comes with doctl, kubectl, and helm
         script:
           - source set_env.sh #loads and executes environment variables and functions from a shell script named set_env.sh into the current shell session.
           - doctl registry login --expiry-seconds 3600
@@ -47,7 +49,6 @@ definitions:
 
     - step: &deploy-to-kubernetes
         name: Deploy to Kubernetes namespace
-        image: alpine/doctl:1.27.13
         script:
           # The key thing about source is that it runs the script in the current shell environment, rather than in a new subshell. This means:
           # Any environment variables set in set_env.sh will be available in the current shell session
@@ -58,10 +59,21 @@ definitions:
           - doctl kubernetes cluster kubeconfig save $KUBE_CLUSTER_ID
           - apk add gettext moreutils #Install 'sponge' and 'envsubst'
           - helm dependency update ./flutter-web-charts
-          - envsubst < ./flutter-web-charts/values.yaml | sponge ./flutter-web-charts/values.yaml #Substitute variables in values.yaml with env variable and then write them out to console
-          - cat ./flutter-web-charts/values.yaml
+          - envsubst < ./flutter-web-charts/values.yaml | sponge ./flutter-web-charts/values.yaml # Substitute variables in values.yaml with env variable and then write them out to console          
+          - cat ./flutter-web-charts/values.yaml          
           # - helm install $APP_NAME-$ENV_NAME ./flutter-web-charts --dry-run # turn this on to print the generated manifest files for debugging
           - helm upgrade $APP_NAME-$ENV_NAME ./flutter-web-charts --debug --install --force --timeout=120s --wait
+
+    - step: &set-sentry-release
+        name: Generate a new Sentry release
+        image: getsentry/sentry-cli
+        script:
+          - export SENTRY_RELEASE_NAME=$(sentry-cli releases propose-version)
+          - sentry-cli releases new $SENTRY_RELEASE_NAME
+          - sentry-cli releases set-commits --auto $SENTRY_RELEASE_NAME --ignore-missing
+          - echo "export SENTRY_RELEASE_NAME=$SENTRY_RELEASE_NAME" >> set_env.sh
+        artifacts:
+          - set_env.sh
 
 pipelines:
   branches:
@@ -82,6 +94,7 @@ pipelines:
                 artifacts:
                   - set_env.sh
 
+            - step: *set-sentry-release
             - step: *build-flutter-web
             - step: *put-container-into-registry
             - step: *deploy-to-kubernetes
@@ -102,6 +115,7 @@ pipelines:
                 artifacts:
                   - set_env.sh
 
+            - step: *set-sentry-release
             - step: *build-flutter-web
             - step: *put-container-into-registry
             - step: *deploy-to-kubernetes
@@ -112,7 +126,6 @@ pipelines:
           - name: BITBUCKET_PR_ID
       - step:
             name: Delete Preview Environment
-            image: alpine/doctl:1.27.13
             script:
               - export ENV_NAME=preview-$BITBUCKET_PR_ID
               - doctl kubernetes cluster kubeconfig save $KUBE_CLUSTER_ID
